@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  background: #FAFAF7;
+  color: #161A1D;
+  font-family: 'Inter', sans-serif;
+}
+
+.font-display { font-family: 'Fraunces', serif; }
+.font-mono { font-family: 'IBM Plex Mono', monospace; }
+
+::selection { background: #E8B923; color: #161A1D; }
+
+:focus-visible {
+  outline: 2px solid #3457D5;
+  outline-offset: 2px;
+}
