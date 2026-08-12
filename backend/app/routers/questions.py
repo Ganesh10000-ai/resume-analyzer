@@ -5,7 +5,7 @@ from app.database import get_db
 from app import models, schemas, auth
 from app.utils.chunker import extract_jd_requirements
 from app.utils.vectorstore import retrieve_relevant_chunks
-from app.utils.groq_client import generate_question_for_chunk, score_user_answer
+from app.utils.groq_client import generate_question_for_chunk, score_user_answer, chat_reply
 
 router = APIRouter(tags=["sessions"])
 
@@ -144,3 +144,74 @@ def submit_answer(
 
     db.commit()
     return {"feedback": feedback_text, "score": score}
+
+
+@router.get("/sessions/{session_id}/chat", response_model=list[schemas.ChatMessageOut])
+def get_chat_history(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    session = (
+        db.query(models.InterviewSession)
+        .filter(models.InterviewSession.id == session_id, models.InterviewSession.user_id == current_user.id)
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return (
+        db.query(models.ChatMessage)
+        .filter(models.ChatMessage.session_id == session_id)
+        .order_by(models.ChatMessage.created_at)
+        .all()
+    )
+
+
+@router.post("/sessions/{session_id}/chat", response_model=schemas.ChatMessageOut)
+def send_chat_message(
+    session_id: int,
+    payload: schemas.ChatMessageIn,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    session = (
+        db.query(models.InterviewSession)
+        .options(joinedload(models.InterviewSession.resume), joinedload(models.InterviewSession.jd))
+        .filter(models.InterviewSession.id == session_id, models.InterviewSession.user_id == current_user.id)
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Persist the user's message first
+    user_msg = models.ChatMessage(session_id=session.id, role="user", content=payload.message)
+    db.add(user_msg)
+    db.commit()
+    db.refresh(user_msg)
+
+    # RAG retrieval: pull resume context relevant to this specific message
+    retrieved = retrieve_relevant_chunks(session.resume.chroma_collection, payload.message, top_k=2)
+    context = "\n---\n".join(retrieved)
+
+    # Load full prior conversation for this session (memory)
+    prior_messages = (
+        db.query(models.ChatMessage)
+        .filter(models.ChatMessage.session_id == session.id)
+        .order_by(models.ChatMessage.created_at)
+        .all()
+    )
+    history = [{"role": m.role, "content": m.content} for m in prior_messages]
+
+    jd_summary = session.jd.raw_text[:800]
+
+    reply_text = chat_reply(history, context, resume_summary="", jd_summary=jd_summary)
+
+    assistant_msg = models.ChatMessage(
+        session_id=session.id, role="assistant", content=reply_text, source_snippet=context or None
+    )
+    db.add(assistant_msg)
+    db.commit()
+    db.refresh(assistant_msg)
+
+    return assistant_msg

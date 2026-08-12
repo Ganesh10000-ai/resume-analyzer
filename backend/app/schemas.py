@@ -90,3 +90,19 @@ class AnswerSubmit(BaseModel):
 class AnswerFeedbackOut(BaseModel):
     feedback: str
     score: int
+
+
+# --- Chat (session memory) ---
+class ChatMessageIn(BaseModel):
+    message: str
+
+
+class ChatMessageOut(BaseModel):
+    id: int
+    role: str
+    content: str
+    source_snippet: Optional[str] = None
+    created_at: datetime.datetime
+
+    class Config:
+        from_attributes = True

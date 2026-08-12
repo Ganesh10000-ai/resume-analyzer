@@ -58,6 +58,10 @@ class InterviewSession(Base):
     resume = relationship("Resume", back_populates="sessions")
     jd = relationship("JobDescription", back_populates="sessions")
     questions = relationship("Question", back_populates="session", cascade="all, delete-orphan")
+    chat_messages = relationship(
+        "ChatMessage", back_populates="session", cascade="all, delete-orphan",
+        order_by="ChatMessage.created_at"
+    )
 
 
 class Question(Base):
@@ -86,3 +90,16 @@ class UserAnswer(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     question = relationship("Question", back_populates="user_answer")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("interview_sessions.id"), nullable=False)
+    role = Column(Enum("user", "assistant", name="chat_role"), nullable=False)
+    content = Column(Text, nullable=False)
+    source_snippet = Column(Text)  # resume chunk retrieved for this turn, if any
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    session = relationship("InterviewSession", back_populates="chat_messages")

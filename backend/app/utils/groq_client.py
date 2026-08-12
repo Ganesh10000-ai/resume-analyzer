@@ -66,6 +66,37 @@ def score_user_answer(question: str, model_answer: str, user_answer: str) -> dic
     return parsed
 
 
+def chat_reply(history: list[dict], retrieved_context: str, resume_summary: str, jd_summary: str) -> str:
+    """
+    Conversational turn with memory: history is a list of {"role": "user"|"assistant", "content": "..."}
+    from earlier in this session. retrieved_context is the resume chunk(s) most relevant to the
+    latest user message (RAG retrieval for this turn).
+    """
+    system = (
+        "You are an interview prep assistant helping a candidate prepare for a specific job. "
+        "You have access to the candidate's resume and the job description they're targeting. "
+        "Answer their questions directly and specifically, grounding anything about their "
+        "background in the retrieved resume context below - never invent experience they don't "
+        "have. If they ask for more interview questions, generate new ones distinct from what's "
+        "already been discussed in this conversation. Keep answers focused and practical, a few "
+        "sentences to a short paragraph unless they ask for a list.\n\n"
+        f"Job description summary: {jd_summary}\n\n"
+        f"Relevant resume context for the current question:\n{retrieved_context or '(no strongly relevant chunk found)'}"
+    )
+
+    messages = [{"role": "system", "content": system}]
+    # include prior turns for memory (cap to last 12 messages to keep context tight)
+    messages.extend(history[-12:])
+
+    completion = _client.chat.completions.create(
+        model=settings.GROQ_MODEL,
+        messages=messages,
+        temperature=0.5,
+        max_tokens=600,
+    )
+    return completion.choices[0].message.content.strip()
+
+
 def _safe_json(raw: str, fallback_question: str | None) -> dict:
     # Strip accidental markdown fences
     cleaned = raw.strip()
