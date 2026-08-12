@@ -14,9 +14,15 @@ _client = chromadb.PersistentClient(
 )
 
 # Local, free sentence-transformers embedding model - no external API needed
-_embedder = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name="all-MiniLM-L6-v2"
-)
+_embedder = None
+
+def get_embedder():
+    global _embedder
+    if _embedder is None:
+        _embedder = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="all-MiniLM-L6-v2"
+        )
+    return _embedder
 
 
 def collection_name_for_resume(user_id: int, resume_id: int) -> str:
@@ -41,7 +47,7 @@ def store_resume_chunks(collection_name: str, chunks: List[str]) -> None:
 def retrieve_relevant_chunks(collection_name: str, query: str, top_k: int = 3) -> List[str]:
     """Given a JD requirement (query), retrieve the most relevant resume chunks."""
     try:
-        collection = _client.get_collection(name=collection_name, embedding_function=_embedder)
+        collection = _client.get_collection(name=collection_name, embedding_function=get_embedder())
     except Exception:
         return []
 
