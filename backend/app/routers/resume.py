@@ -5,7 +5,7 @@ from app.database import get_db
 from app import models, schemas, auth
 from app.utils.pdf_parser import extract_text_from_pdf
 from app.utils.chunker import chunk_resume
-##from app.utils.vectorstore import collection_name_for_resume, store_resume_chunks
+from app.utils.vectorstore import collection_name_for_resume, store_resume_chunks
 
 router = APIRouter(prefix="/resumes", tags=["resumes"])
 
@@ -34,9 +34,9 @@ async def upload_resume(
     db.commit()
     db.refresh(resume)
 
-    ##collection_name = collection_name_for_resume(current_user.id, resume.id)
-    ##chunks = chunk_resume(text)
-    ##store_resume_chunks(collection_name, chunks)
+    collection_name = collection_name_for_resume(current_user.id, resume.id)
+    chunks = chunk_resume(text)
+    store_resume_chunks(collection_name, chunks)
 
     resume.chroma_collection = "test"
     db.commit()

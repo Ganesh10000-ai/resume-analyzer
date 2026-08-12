@@ -13,16 +13,10 @@ _client = chromadb.PersistentClient(
     settings=ChromaSettings(anonymized_telemetry=False),
 )
 
-# Local, free sentence-transformers embedding model - no external API needed
-_embedder = None
-
-def get_embedder():
-    global _embedder
-    if _embedder is None:
-        _embedder = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
-        )
-    return _embedder
+# Lightweight ONNX-based embedding (bundled with chromadb) - no torch, no CUDA,
+# no risk of the AVX-512 SIGILL crash that full torch builds hit on Render's
+# shared CPU instances. Downloads a small (~80MB) MiniLM ONNX model on first use.
+_embedder = embedding_functions.DefaultEmbeddingFunction()
 
 
 def collection_name_for_resume(user_id: int, resume_id: int) -> str:
@@ -31,7 +25,6 @@ def collection_name_for_resume(user_id: int, resume_id: int) -> str:
 
 def store_resume_chunks(collection_name: str, chunks: List[str]) -> None:
     """Embed and persist resume chunks under a per-resume collection."""
-    # Fresh collection each time a resume is (re)uploaded
     try:
         _client.delete_collection(collection_name)
     except Exception:
@@ -47,7 +40,7 @@ def store_resume_chunks(collection_name: str, chunks: List[str]) -> None:
 def retrieve_relevant_chunks(collection_name: str, query: str, top_k: int = 3) -> List[str]:
     """Given a JD requirement (query), retrieve the most relevant resume chunks."""
     try:
-        collection = _client.get_collection(name=collection_name, embedding_function=get_embedder())
+        collection = _client.get_collection(name=collection_name, embedding_function=_embedder)
     except Exception:
         return []
 

@@ -1,123 +1,640 @@
-# Ground — RAG Resume Interview Analyzer
+# 🚀 InterviewCraft AI
+### AI-Powered Resume Interview Preparation using Retrieval-Augmented Generation (RAG)
 
-Upload a resume + job description. The app retrieves the resume snippets most
-relevant to each JD requirement (RAG), generates grounded interview questions
-+ model answers via Groq, and lets you practice with AI feedback. Session
-history (memory) is persisted in MySQL so past questions/answers are never lost.
+<p align="center">
 
-**Stack:** React (Vite) · FastAPI · MySQL · ChromaDB (vector store, local/free)
-· Groq (`llama-3.3-70b-versatile`) · JWT auth
+![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi)
+![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
+![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?logo=mysql)
+![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-orange)
+![Groq](https://img.shields.io/badge/LLM-Groq-black)
+![RAG](https://img.shields.io/badge/Architecture-RAG-success)
 
----
-
-## How the RAG pipeline works
-
-1. **Ingest**: resume PDF → `pdfplumber` extracts text → `chunker.py` splits
-   it into section-aware chunks (~1 chunk per bullet/project/role).
-2. **Embed & index**: each chunk is embedded locally with
-   `sentence-transformers/all-MiniLM-L6-v2` (no external API, runs on CPU)
-   and stored in a per-resume ChromaDB collection.
-3. **Retrieve**: the JD is split into requirement lines. For each
-   requirement, Chroma does a similarity search to pull the single most
-   relevant resume chunk.
-4. **Generate**: the (requirement, resume chunk) pair is sent to Groq, which
-   returns one interview question + a STAR-format model answer — grounded
-   only in that chunk, so every question can be traced back to a specific
-   line on the resume.
-5. **Memory**: sessions, questions, and your own practice answers + AI
-   feedback are all stored in MySQL, so you can revisit any past session.
+</p>
 
 ---
 
-## Database schema (MySQL)
+# 📖 Overview
 
-```
-users              (id, email, hashed_password, full_name, created_at)
-resumes            (id, user_id, filename, raw_text, chroma_collection, created_at)
-job_descriptions   (id, user_id, title, raw_text, created_at)
-interview_sessions (id, user_id, resume_id, jd_id, created_at)
-questions          (id, session_id, question_text, category, source_snippet, model_answer, created_at)
-user_answers       (id, question_id, answer_text, feedback, score, created_at)
-```
+**InterviewCraft AI** is an intelligent interview preparation platform that generates **personalized interview questions** based on a candidate's resume and a target job description using **Retrieval-Augmented Generation (RAG)**.
 
-Tables are created automatically on backend startup via SQLAlchemy
-(`Base.metadata.create_all`) — no manual migration needed for this project
-scope.
+Instead of asking generic interview questions, the system understands the candidate's experience, retrieves the most relevant resume sections for every job requirement, and generates highly contextual interview questions with STAR-format model answers.
+
+The application also stores interview history, user responses, AI feedback, and scores, allowing candidates to continuously improve their interview performance.
 
 ---
 
-## Local setup
+# ✨ Key Features
 
-### 1. MySQL
-Create a local database:
-```sql
-CREATE DATABASE resume_analyzer;
+## 👤 Authentication
+
+- Secure JWT Authentication
+- User Registration & Login
+- Password Hashing using bcrypt
+- Protected APIs
+
+---
+
+## 📄 Resume Analysis
+
+- Upload Resume (PDF)
+- Automatic Text Extraction
+- Resume Parsing
+- Intelligent Section-aware Chunking
+
+---
+
+## 💼 Job Description Analysis
+
+- Upload Job Description
+- Automatic Requirement Extraction
+- Requirement-wise Processing
+
+---
+
+## 🧠 Retrieval-Augmented Generation (RAG)
+
+- Local Sentence Embeddings
+- Semantic Similarity Search
+- Context Retrieval
+- Resume Grounding
+- Hallucination Reduction
+
+---
+
+## 🤖 AI Interview Generator
+
+For every job requirement the system generates
+
+- Personalized Interview Question
+- STAR Format Model Answer
+- Resume Evidence
+- Question Category
+
+---
+
+## 🎤 Interview Practice
+
+Candidates can
+
+- Practice Interview Questions
+- Submit Answers
+- Receive AI Feedback
+- View AI Score
+- Track Previous Sessions
+
+---
+
+## 📊 Interview History
+
+Every interview session is permanently stored.
+
+Users can revisit
+
+- Resume
+- Job Description
+- Questions
+- Answers
+- AI Feedback
+- Scores
+
+---
+
+# 🧠 Why RAG?
+
+Traditional interview platforms simply send the entire resume to an LLM and ask it to generate questions.
+
+This often produces:
+
+- Hallucinated experience
+- Generic questions
+- Poor personalization
+
+InterviewCraft AI uses **Retrieval-Augmented Generation**.
+
+Instead of sending the whole resume, it retrieves only the most relevant resume section for every job requirement before generating interview questions.
+
+Benefits
+
+✅ Context-aware
+
+✅ Resume-grounded
+
+✅ Explainable
+
+✅ More accurate
+
+✅ Less hallucination
+
+---
+
+# ⚙️ Complete Workflow
+
+```
+                    Resume PDF
+                         │
+                         ▼
+                PDF Text Extraction
+                         │
+                         ▼
+                Section-aware Chunking
+                         │
+                         ▼
+              Sentence Embedding Model
+                         │
+                         ▼
+                 Chroma Vector Database
+                         │
+                         │
+Job Description ─────────┘
+        │
+        ▼
+Requirement Extraction
+        │
+        ▼
+Semantic Similarity Search
+        │
+        ▼
+Relevant Resume Context
+        │
+        ▼
+Groq LLM
+        │
+        ▼
+Interview Question
++
+STAR Model Answer
+        │
+        ▼
+Candidate Practice
+        │
+        ▼
+AI Evaluation
+        │
+        ▼
+Feedback + Score
+        │
+        ▼
+Stored in MySQL
 ```
 
-### 2. Backend
+---
+
+# 🔍 RAG Pipeline
+
+## Step 1
+
+Candidate uploads a Resume PDF.
+
+---
+
+## Step 2
+
+The backend extracts text using
+
+- pdfplumber
+
+---
+
+## Step 3
+
+The extracted resume is split into meaningful chunks.
+
+Instead of splitting every 500 characters, the system performs **section-aware chunking** to preserve semantic meaning.
+
+Example
+
+```
+Education
+
+↓
+
+Skills
+
+↓
+
+Projects
+
+↓
+
+Experience
+
+↓
+
+Certifications
+```
+
+---
+
+## Step 4
+
+Each chunk is converted into a dense vector using
+
+```
+all-MiniLM-L6-v2
+```
+
+Sentence Transformer embeddings.
+
+---
+
+## Step 5
+
+The vectors are stored inside ChromaDB.
+
+Each uploaded resume gets an independent vector collection.
+
+```
+resume_5_12
+
+resume_5_13
+
+resume_12_1
+```
+
+---
+
+## Step 6
+
+The uploaded Job Description is automatically divided into hiring requirements.
+
+Example
+
+```
+React
+
+REST APIs
+
+Docker
+
+SQL
+
+Leadership
+```
+
+---
+
+## Step 7
+
+For every requirement
+
+```
+Requirement
+
+↓
+
+Semantic Search
+
+↓
+
+Most Relevant Resume Chunk
+```
+
+---
+
+## Step 8
+
+Groq receives
+
+```
+Requirement
+
++
+
+Retrieved Resume Chunk
+```
+
+and generates
+
+- Interview Question
+- STAR Model Answer
+
+---
+
+## Step 9
+
+Candidate practices answering.
+
+---
+
+## Step 10
+
+The AI evaluates
+
+- Technical Accuracy
+- Communication
+- Completeness
+- STAR Structure
+
+and generates
+
+- Score
+- Feedback
+- Suggestions
+
+---
+
+# 🏗 System Architecture
+
+```
+                +--------------------+
+                | React Frontend     |
+                +---------+----------+
+                          |
+                          |
+                     REST APIs
+                          |
+                          ▼
+                +--------------------+
+                | FastAPI Backend    |
+                +---------+----------+
+                          |
+        +-----------------+----------------+
+        |                                  |
+        ▼                                  ▼
+ MySQL Database                    ChromaDB Vector Store
+        |                                  |
+        |                                  |
+ Session Memory                 Resume Embeddings
+        |                                  |
+        +---------------+------------------+
+                        |
+                        ▼
+                 Groq LLM API
+                        |
+                        ▼
+           Interview Question Generator
+```
+
+---
+
+# 🗄 Database Schema
+
+```
+users
+
+├── resumes
+
+├── job_descriptions
+
+├── interview_sessions
+
+├── questions
+
+└── user_answers
+```
+
+---
+
+## Tables
+
+### users
+
+Stores
+
+- User Information
+- Authentication Details
+
+---
+
+### resumes
+
+Stores
+
+- Resume Text
+- Uploaded File
+- Chroma Collection
+
+---
+
+### job_descriptions
+
+Stores uploaded Job Descriptions.
+
+---
+
+### interview_sessions
+
+Links
+
+```
+User
+
+↓
+
+Resume
+
+↓
+
+Job Description
+
+↓
+
+Interview Session
+```
+
+---
+
+### questions
+
+Stores
+
+- Question
+- Source Resume Snippet
+- Model Answer
+
+---
+
+### user_answers
+
+Stores
+
+- Candidate Answer
+- AI Feedback
+- Score
+
+---
+
+# 🛠 Technology Stack
+
+| Layer | Technology |
+|----------|----------------|
+| Frontend | React + Vite |
+| Backend | FastAPI |
+| Database | MySQL |
+| Vector Database | ChromaDB |
+| ORM | SQLAlchemy |
+| Authentication | JWT |
+| Embeddings | Sentence Transformers |
+| LLM | Groq |
+| PDF Parser | pdfplumber |
+| Password Hashing | bcrypt |
+| Deployment | Render + Vercel |
+
+---
+
+# 📂 Project Structure
+
+```
+InterviewCraft-AI/
+
+│
+
+├── backend/
+
+│ ├── app/
+
+│ │ ├── auth/
+
+│ │ ├── config/
+
+│ │ ├── database/
+
+│ │ ├── models/
+
+│ │ ├── routers/
+
+│ │ ├── schemas/
+
+│ │ ├── utils/
+
+│ │ └── main.py
+
+│
+
+├── frontend/
+
+│ ├── src/
+
+│ ├── public/
+
+│ └── package.json
+
+│
+
+├── render.yaml
+
+├── README.md
+
+└── requirements.txt
+```
+
+---
+
+# 🚀 Local Installation
+
+## Clone Repository
+
+```bash
+git clone https://github.com/yourusername/interviewcraft-ai.git
+
+cd interviewcraft-ai
+```
+
+---
+
+## Backend
+
 ```bash
 cd backend
+
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# Windows
+
+venv\Scripts\activate
+
+# Linux / macOS
+
+source venv/bin/activate
+
 pip install -r requirements.txt
-cp .env.example .env            # fill in DATABASE_URL, GROQ_API_KEY, SECRET_KEY
+
 uvicorn app.main:app --reload
 ```
-Get a free Groq API key at https://console.groq.com/keys — free tier is
-generous and plenty for this project.
 
-Backend runs at `http://localhost:8000`. Interactive API docs at
-`http://localhost:8000/docs`.
+Backend
 
-### 3. Frontend
+```
+http://localhost:8000
+```
+
+Swagger
+
+```
+http://localhost:8000/docs
+```
+
+---
+
+## Frontend
+
 ```bash
 cd frontend
+
 npm install
-cp .env.example .env            # VITE_API_URL=http://localhost:8000
+
 npm run dev
 ```
-Frontend runs at `http://localhost:5173`.
+
+Frontend
+
+```
+http://localhost:5173
+```
 
 ---
 
-## Deployment
+# 🔐 Environment Variables
 
-### Backend → Render
-1. Push this repo to GitHub.
-2. On Render: **New → Web Service**, connect the repo, root directory
-   `backend/`.
-3. Build command: `pip install -r requirements.txt`
-   Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-4. Add environment variables: `DATABASE_URL`, `GROQ_API_KEY`, `GROQ_MODEL`,
-   `SECRET_KEY`, `FRONTEND_ORIGIN` (your Vercel URL once deployed).
-5. For MySQL: Render doesn't offer managed MySQL on the free tier — use
-   **PlanetScale**, **Railway**, or **Aiven** for a free managed MySQL
-   instance, and paste its connection string into `DATABASE_URL`.
-   Format: `mysql+pymysql://user:password@host:3306/dbname`
-6. Note: ChromaDB persists to local disk (`CHROMA_PERSIST_DIR`). Render's
-   free tier disk is ephemeral on redeploy — fine for a resume-project demo,
-   but mention this tradeoff if asked (a production version would use a
-   hosted vector DB like Chroma Cloud, Pinecone, or pgvector).
+Backend
 
-### Frontend → Vercel
-1. On Vercel: **New Project**, import the repo, root directory `frontend/`.
-2. Framework preset: Vite.
-3. Add environment variable `VITE_API_URL` = your Render backend URL.
-4. Deploy.
+```env
+DATABASE_URL=
+
+SECRET_KEY=
+
+GROQ_API_KEY=
+
+GROQ_MODEL=llama-3.3-70b-versatile
+
+FRONTEND_ORIGIN=http://localhost:5173
+
+CHROMA_PERSIST_DIR=./chroma_data
+```
+
+Frontend
+
+```env
+VITE_API_URL=http://localhost:8000
+```
 
 ---
 
-## Talking points for interviews
+# 📈 Future Enhancements
 
-- **Why RAG here, not just "call an LLM with the whole resume"**: grounding
-  each question in a *retrieved, cited* chunk means every question is
-  traceable and the model can't hallucinate unrelated experience — this is
-  the actual value RAG adds over a single long prompt.
-- **Chunking strategy**: section-aware chunking (splitting on resume
-  headers) instead of naive fixed-length splitting, so each chunk stays
-  semantically coherent (one project/bullet, not half a sentence).
-- **Memory**: sessions/questions/answers persist in MySQL — a second axis of
-  "memory" beyond vector retrieval, letting you track improvement over time.
-- **Local embeddings**: using `sentence-transformers` locally instead of an
-  embeddings API keeps the retrieval step free and fast, and only the
-  generation step calls out to Groq.
+- Voice-based Mock Interviews
+- AI Resume Improvement Suggestions
+- ATS Resume Score
+- Company-specific Interview Preparation
+- Coding Interview Module
+- HR Interview Simulation
+- Behavioral Analysis
+- Multi-language Support
+- Dashboard Analytics
+- Email Interview Reports
+
+---
+
+# 👨‍💻 Author
+
+**Ganesh J**
+
+AI & Full Stack Developer
+
+Passionate about building scalable AI-powered applications using FastAPI, React, Retrieval-Augmented Generation (RAG), and Large Language Models.
+
+---
+
+# ⭐ If you found this project useful, consider giving it a star!
